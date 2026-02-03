@@ -24,3 +24,33 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 로봇이 상품 칸에 도착했을 때 픽업 이펙트 */
+@keyframes pickup-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pickup-bounce {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+}
+
+.animate-pickup-ring {
+  animation: pickup-ring 0.6s ease-out forwards;
+}
+
+.animate-pickup-bounce {
+  animation: pickup-bounce 0.4s ease-out;
+}
