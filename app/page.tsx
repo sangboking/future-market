@@ -28,6 +28,8 @@ export default function Home() {
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [productsForView, setProductsForView] =
     useState<Product[]>(INITIAL_PRODUCTS);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [hasAnyProductOnShelf, setHasAnyProductOnShelf] = useState(false);
 
   /** 재고 기반 랜덤 주문 생성 */
   const createRandomOrder = (
@@ -84,13 +86,22 @@ export default function Home() {
     setProductsForView(nextProducts);
   }, [orders]);
 
-  /** 랜덤 주문 생성 루프 */
+  /** 랜덤 주문 생성 루프 (시작/중단 버튼으로 제어) */
   useEffect(() => {
+    
+
+    if (!isOrdering) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
     const run = () => {
       const order = createRandomOrder(stockRef.current, nextOrderIdRef.current);
 
       if (order) {
-        // 재고 차감
         order.items.forEach((item) => {
           const current = stockRef.current.get(item.productName) ?? 0;
 
@@ -107,16 +118,29 @@ export default function Home() {
       timerRef.current = setTimeout(run, ORDER_INTERVAL_MS);
     };
 
-    timerRef.current = setTimeout(run, ORDER_INTERVAL_MS);
+    run();
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, []);
+  }, [isOrdering]);
+
+  const handleStartOrdering = () => {
+    if (!hasAnyProductOnShelf) return;
+    setIsOrdering(true);
+  };
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-zinc-950">
-      <Header />
+      <Header
+        isOrdering={isOrdering}
+        canStart={hasAnyProductOnShelf}
+        onStart={handleStartOrdering}
+        onStop={() => setIsOrdering(false)}
+      />
 
       <div className="flex flex-1 min-h-0">
         <LeftSideBar orders={orders} completedOrders={completedOrders} />
@@ -129,6 +153,7 @@ export default function Home() {
             if (completed) setCompletedOrders((prev) => [...prev, completed]);
             setOrders((prev) => prev.slice(1));
           }}
+          onHasAnyProductChange={setHasAnyProductOnShelf}
         />
 
         <RightSideBar

@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Future Market – 로봇 픽업 마트 시뮬레이터
 
-## Getting Started
+미래의 마트에서는 주문이 들어오면 로봇이 매장 곳곳에 진열된 상품을 픽업해
+입구까지 가져다주는 형태가 될 것이라는 상상을 UI로 시각화한 프로젝트입니다.
 
-First, run the development server:
+이 프로젝트에서는:
+- 매장 진열대(그리드)에 상품을 배치하고
+- 랜덤으로 생성되는 주문을 로봇이 최적 경로로 순회하며
+- 재고가 줄어들고, 완료된 주문이 사이드바에 쌓이는 흐름을 볼 수 있습니다.
+
+---
+
+## 주요 기능
+
+- **진열대 그리드**
+  - 12 × 4 크기의 빙고판 형태 그리드
+  - 각 칸에 상품(사과, 바나나, 물 등)을 배치
+  - 이미 진열된 상품은 다른 칸에 중복 진열 불가
+  - 맨 오른쪽 하단 칸은 진열 금지 + `입구` 영역으로 표시
+
+- **로봇 픽업 시뮬레이션**
+  - 일정 시간(기본 15초)마다 재고 기반 랜덤 주문 생성
+  - 주문이 들어오면 로봇이:
+    - 해당 주문에 필요한 상품이 있는 칸들만 골라 방문
+    - 방문 순서를 전부 순열(permutations)로 계산해서
+    - **총 이동 칸 수가 최소가 되는 경로**로 최적화
+  - 상품 칸과 입구 칸에서는 잠시 멈추며, 픽업/도착 이펙트가 재생됨
+  - 한 주문을 끝까지 처리하면 자동으로 다음 주문으로 넘어감
+
+- **사이드바 정보**
+  - **왼쪽**: 대기 중인 주문 목록, 완료된 주문 목록
+  - **오른쪽**: 상품별 남은 재고 수량 표시
+
+- **로봇 캐릭터**
+  - 단순 원 형태가 아닌 SVG 로봇 아이콘 사용
+  - 파일 위치: `components/icons/RobotIcon.tsx`
+
+---
+
+## 기술 스택
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **UI**: React 19, Tailwind CSS v4
+
+---
+
+## 실행 방법
+
+프로젝트 루트에서 의존성을 설치한 뒤 개발 서버를 실행합니다.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)에 접속하면
+미래 마트 시뮬레이션 화면을 볼 수 있습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 주요 파일 구조
 
-## Learn More
+- `app/page.tsx`  
+  - 전체 페이지 레이아웃을 구성하고
+  - 주문 목록, 완료된 주문, 재고 상태를 관리하며
+  - 랜덤 주문 생성 및 재고 차감 로직을 담당합니다.
 
-To learn more about Next.js, take a look at the following resources:
+- `components/layouts/Main.tsx`  
+  - 진열대 그리드와 로봇 이동 경로, 모달 UI를 담당합니다.
+  - 로봇 이동 경로 계산:
+    - 주문에 필요한 상품 칸만 추려서
+    - 모든 순열을 생성해 가장 짧은 경로를 선택
+    - 입구 → 상품들 → 입구 순으로 이동 경로를 만듭니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `components/layouts/LeftSideBar.tsx`  
+  - 대기 중/완료된 주문을 카드 형태로 보여줍니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `components/layouts/RightSideBar.tsx`  
+  - 상품별 남은 재고 수량을 단순 리스트로 보여줍니다.
 
-## Deploy on Vercel
+- `components/icons/RobotIcon.tsx`  
+  - 로봇 SVG 아이콘 컴포넌트입니다.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `constants/products.ts`  
+  - 초기 상품 목록과 기본 재고 수량을 정의합니다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 앞으로 확장 아이디어
+
+- 사용자가 직접 상품을 선택해 주문하는 UI 추가
+- 로봇을 여러 대로 늘려 동시 주문 처리
+- 재입고 로직 및 창고 구역 추가
+- 더 풍부한 애니메이션과 사운드 효과 연동
+
+이 프로젝트는 **“미래 마트의 로봇 물류 흐름을 UI로 실험해 보는 playground”**를
+목표로 하고 있습니다. 자유롭게 수정하면서 본인만의 미래 마트를 만들어 보세요.
