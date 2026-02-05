@@ -63,3 +63,5 @@ npm run dev
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)에 접속하면
 미래 마트 로봇 픽업 시뮬레이션 화면을 볼 수 있습니다.
+[https://future-market-silk.vercel.app/](https://future-market-silk.vercel.app/) 에 접속하면
+환경 설정 없이 프로젝트 결과물을 볼 수 있습니다.
