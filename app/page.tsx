@@ -23,6 +23,7 @@ export default function Home() {
   const stockRef = useRef<Map<string, number>>(new Map());
   const nextOrderIdRef = useRef(1);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const displayedProductNamesRef = useRef<string[]>([]);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
@@ -31,20 +32,22 @@ export default function Home() {
   const [isOrdering, setIsOrdering] = useState(false);
   const [hasAnyProductOnShelf, setHasAnyProductOnShelf] = useState(false);
 
-  /** 재고 기반 랜덤 주문 생성 */
+
   const createRandomOrder = (
     stock: Map<string, number>,
-    nextOrderId: number
+    nextOrderId: number,
+    displayedProductNames: string[]
   ): Order | null => {
-    const availableProducts = Array.from(stock.entries()).filter(
-      ([, qty]) => qty > 0
+    const displayedSet = new Set(displayedProductNames);
+    const candidates = Array.from(stock.entries()).filter(
+      ([name, qty]) => qty > 0 && displayedSet.has(name)
     );
 
-    if (availableProducts.length === 0) return null;
+    if (candidates.length === 0) return null;
 
     const items: Order["items"] = [];
 
-    availableProducts.forEach(([name, available]) => {
+    candidates.forEach(([name, available]) => {
       if (Math.random() < 0.5) {
         const quantity = Math.floor(Math.random() * available) + 1;
         items.push({ productName: name, quantity });
@@ -53,7 +56,7 @@ export default function Home() {
 
     if (items.length === 0) {
       const [name, available] =
-        availableProducts[Math.floor(Math.random() * availableProducts.length)];
+        candidates[Math.floor(Math.random() * candidates.length)];
       const quantity = Math.floor(Math.random() * available) + 1;
       items.push({ productName: name, quantity });
     }
@@ -69,8 +72,8 @@ export default function Home() {
   useEffect(() => {
     const stock = new Map<string, number>();
 
-    INITIAL_PRODUCTS.forEach((p) => {
-      stock.set(p.name, p.quantity);
+    INITIAL_PRODUCTS.forEach((el) => {
+      stock.set(el.name, el.quantity);
     });
 
     stockRef.current = stock;
@@ -78,18 +81,14 @@ export default function Home() {
 
   /** 주문 → 재고 반영 + 화면용 상품 갱신 */
   useEffect(() => {
-    const nextProducts = INITIAL_PRODUCTS.map((p) => ({
-      ...p,
-      quantity: stockRef.current.get(p.name) ?? 0,
-    }));
-
+    const nextProducts = INITIAL_PRODUCTS.map((el) => {
+      const quantity = stockRef.current.get(el.name) ?? 0;
+      return { ...el, quantity };
+    });
     setProductsForView(nextProducts);
   }, [orders]);
 
-  /** 랜덤 주문 생성 루프 (시작/중단 버튼으로 제어) */
   useEffect(() => {
-    
-
     if (!isOrdering) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -99,7 +98,11 @@ export default function Home() {
     }
 
     const run = () => {
-      const order = createRandomOrder(stockRef.current, nextOrderIdRef.current);
+      const order = createRandomOrder(
+        stockRef.current,
+        nextOrderIdRef.current,
+        displayedProductNamesRef.current
+      );
 
       if (order) {
         order.items.forEach((item) => {
@@ -133,6 +136,30 @@ export default function Home() {
     setIsOrdering(true);
   };
 
+  const handleDisplayedProductsChange = (names: string[]) => {
+    displayedProductNamesRef.current = names;
+  };
+
+  const handleRestock = (name: string, addQuantity: number) => {
+    const current = stockRef.current.get(name) ?? 0;
+    const next = Math.max(0, current + addQuantity);
+    stockRef.current.set(name, next);
+
+    setProductsForView((prev) =>
+      prev.map((p) =>
+        p.name === name ? { ...p, quantity: next } : p
+      )
+    );
+  };
+
+  const onOrderComplete = () => {
+    const completed = orders[0];
+    if (completed) setCompletedOrders((prev) => [...prev, completed]);
+    setOrders((prev) => prev.slice(1));
+  }
+
+ 
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-50 font-sans dark:bg-zinc-950">
       <Header
@@ -148,17 +175,14 @@ export default function Home() {
         <Main
           products={productsForView}
           orders={orders}
-          onOrderComplete={() => {
-            const completed = orders[0];
-            if (completed) setCompletedOrders((prev) => [...prev, completed]);
-            setOrders((prev) => prev.slice(1));
-          }}
-          onHasAnyProductChange={setHasAnyProductOnShelf}
+          onOrderComplete={onOrderComplete}
+          setHasAnyProductOnShelf={setHasAnyProductOnShelf}
+          onDisplayedProductsChange={handleDisplayedProductsChange}
         />
 
         <RightSideBar
           products={productsForView}
-          setProductsForView={setProductsForView}
+          handleRestock={handleRestock}
         />
       </div>
     </div>
